@@ -47,11 +47,15 @@
         // 지도에 표시 될 마커 객체를 가지고 있을 배열
         const detected_markers = [];
         const detected_again_markers = [];
-        const killed_makers = [];
+        const killed_markers = [];
 
-        const red_image = "resource/marker_icon/red.png"
-        const yellow_image = "resource/marker_icon/yellow.png"
-        const green_image = "resource/marker_icon/green.png"
+        // const red_image = "/resource/marker_icon/red.png"
+        // const yellow_image = "/resource/marker_icon/yellow.png"
+        // const green_image = "/resource/marker_icon/green.png"
+
+        const red_image = "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+        const yellow_image = "https://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
+        const green_image = "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
 
         // 실제로 지도에 추가 될 마커 객체를 담을 배열
         const marker_object_list = [];
@@ -64,22 +68,24 @@
                     // 배열 초기화
                     detected_markers.length = 0;
                     detected_again_markers.length = 0;
-                    killed_makers.length = 0;
+                    killed_markers.length = 0;
 
                     // 데이터 받아와서 배열에 넣기
                     data.forEach(item => {
                         const latlng = new kakao.maps.LatLng(item.latitude, item.longitude);
                         const data_item = {
                             latlng: latlng,
-                            content: item.road || '정보 없음'
+                            content: item.road,
+                            status: item.status
                         };
+                        console.log(item.latitude)
 
-                        if (item.state === 0) {
+                        if (item.status === 0) {
                             detected_markers.push(data_item);
-                        } else if (item.state === 1) {
+                        } else if (item.status === 1) {
                             detected_again_markers.push(data_item);
-                        } else if (item.state === 2) {
-                            killed_makers.push(data_item);
+                        } else if (item.status === 2) {
+                            killed_markers.push(data_item);
                         }
                     });
 
@@ -115,7 +121,7 @@
                 addMarkers(detected_again_markers);
             }
             if (checkbox3.checked) {
-                addMarkers(killed_makers);
+                addMarkers(killed_markers);
             }
         }
 
@@ -135,21 +141,26 @@
 
         // 마커를 추가하는 함수
         function addMarkers(positions) {
-            for (var i = 0; i < positions.length; i ++) {
-                // 마커를 생성합니다
+            for (var i = 0; i < positions.length; i++) {
+                var src = positions[i].status === 0 ? green_image : (positions[i].status === 1 ? yellow_image : red_image);
 
-                //  status 에 따라 마커 이미지 변경
-                images = positions[i].status === 0 ? green_image : (positions[i].status === 1 ? yellow_image : red_image);
+                var img = new kakao.maps.MarkerImage(
+                    src,
+                    new kakao.maps.Size(32, 34),
+                    {offset: new kakao.maps.Point(27, 69)}
+                );
 
                 var marker = new kakao.maps.Marker({
-                    map: map, // 마커를 표시할 지도
-                    position: positions[i].latlng, // 마커의 위치
-                    image: images
+                    map: map,
+                    position: positions[i].latlng,
+                    image: img
                 });
 
-                // 마커에 표시할 인포윈도우를 생성합니다
+                // ★ 중요: 생성한 마커를 배열에 추가
+                marker_object_list.push(marker);
+
                 var infowindow = new kakao.maps.InfoWindow({
-                    content: positions[i].content // 인포윈도우에 표시할 내용
+                    content: positions[i].content
                 });
 
                 kakao.maps.event.addListener(marker, 'mouseover', makeOverListener(map, marker, infowindow));
