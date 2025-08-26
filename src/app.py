@@ -2,12 +2,12 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+
 import httpx
 from dotenv import load_dotenv
 import os
-
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 templates = Jinja2Templates(directory="../resource/pages")
@@ -19,7 +19,39 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-@app.get("/api/getData")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+
+    return templates.TemplateResponse("index.html", {
+        "request": request
+    })
+
+
+@app.get("/api/raspberry-pi/camera", response_class=HTMLResponse)
+async def get_camera(request: Request):
+    """
+
+        라즈베리파이에서 서버로 카메라 영상 보내는 API
+        from raspberry pi to server
+
+    """
+    pass
+
+
+@app.get("/api/get-camera", response_class=HTMLResponse)
+async def get_camera(request: Request):
+    """
+
+        라즈베리파이 카메라 영상 가져오는 api
+        from server to brawser
+
+    """
+    pass
+
+
+@app.get("/api/kakao/get-data")
 async def get_data(request: Request):
     """
     지도에 표시할 마커 데이터를 반환하는 API
@@ -33,40 +65,8 @@ async def get_data(request: Request):
         - state: int (상태 - 0: 발견, 1: 재발견, 2: 사체 발견)
     """
     try:
-        # 실제 구현에서는 데이터베이스에서 데이터를 조회해야 합니다
-        # 예: data = await fetch_marker_data_from_database()
 
-        data = [
-    {
-        "latitude": 36.46201132199759,
-        "longitude": 127.8490946787158,
-        "road": "대전광역시 유성구 대학로 291",
-        "status": 0  # 0: 발견, 1: 재발견, 2: 사체 발견
-    },
-    {
-        "latitude": 36.47201132199759,
-        "longitude": 127.8590946787158,
-        "road": "대전광역시 유성구 봉명동",
-        "status": 1
-    },
-    {
-        "latitude": 36.45201132199759,
-        "longitude": 127.8390946787158,
-        "road": "대전광역시 유성구 구성동",
-        "status": 2
-    },
-    {
-        "latitude": 36.48201132199759,
-        "longitude": 127.8690946787158,
-        "road": "대전광역시 유성구 전민동",
-        "status": 0
-    },
-    {
-        "latitude": 36.44201132199759,
-        "longitude": 127.8290946787158,
-        "road": "대전광역시 유성구 죽동",
-        "status": 1
-    }]
+        data = None
 
         return JSONResponse(content=data)
 
@@ -76,15 +76,6 @@ async def get_data(request: Request):
             content={"error": "데이터를 가져오는 중 오류가 발생했습니다."},
             status_code=500
         )
-
-
-@app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-
-    return templates.TemplateResponse("index.html", {
-        "request": request
-    })
-
 
 
 @app.get("/api/kakao/maps-sdk")

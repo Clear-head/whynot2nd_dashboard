@@ -4,35 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>KAKAOMAP</title>
+
+    <!-- 카카오맵 API -->
     <script type="text/javascript" src="/api/kakao/maps-sdk"></script>
+
+
+    <!-- 부트스트랩 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
           rel="stylesheet"
           integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr"
           crossorigin="anonymous">
 </head>
 <body>
-<script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
-        crossorigin="anonymous">
-</script>
 
-    <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="switchDetected" checked>
-        <label class="form-check-label" for="switchDetected">발견</label>
+    <!-- 부트스트랩 -->
+    <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+            crossorigin="anonymous">
+    </script>
+
+    <!--    Grafana panel    -->
+    <div class="container">
+
+        <iframe src="http://localhost:3000/d-solo/38eedacf-2392-420d-8c4f-83a81cc1c579/graph?orgId=1&from=1756185304902&to=1756188904902&timezone=browser&refresh=1m&panelId=2&__feature.dashboardSceneSolo=true" width="450" height="200" frameborder="0"></iframe>
+
     </div>
 
-    <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="switchDetectedAgain" checked>
-        <label class="form-check-label" for="switchDetectedAgain">재발견</label>
+
+    <!--    마커 필터 스위치    -->
+    <div class="container">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="switchDetected" checked>
+            <label class="form-check-label" for="switchDetected">발견</label>
+        </div>
+
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="switchDetectedAgain" checked>
+            <label class="form-check-label" for="switchDetectedAgain">재발견</label>
+        </div>
+
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="switchKilled" checked>
+            <label class="form-check-label" for="switchKilled">사체 발견</label>
+        </div>
+
+        <!--    카카오 맵    -->
+        <div id="map" style="width:60%;height:500px;"></div>
+
     </div>
 
-    <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="switchKilled" checked>
-        <label class="form-check-label" for="switchKilled">사체 발견</label>
-    </div>
-
-    <div id="map" style="width:60%;height:500px;"></div>
 
     <script>
         var map_container = document.getElementById('map'), // 지도를 표시할 div
@@ -41,7 +62,6 @@
                 level: 13    // 지도의 확대 레벨
             };
 
-        // 지도를 표시할 div와  지도 옵션으로  지도를 생성합니다
         var map = new kakao.maps.Map(map_container, map_option);
 
         // 지도에 표시 될 마커 객체를 가지고 있을 배열
@@ -49,10 +69,7 @@
         const detected_again_markers = [];
         const killed_markers = [];
 
-        // const red_image = "/resource/marker_icon/red.png"
-        // const yellow_image = "/resource/marker_icon/yellow.png"
-        // const green_image = "/resource/marker_icon/green.png"
-
+        //  마커 종류별 이미지
         const red_image = "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
         const yellow_image = "https://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
         const green_image = "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
@@ -60,9 +77,9 @@
         // 실제로 지도에 추가 될 마커 객체를 담을 배열
         const marker_object_list = [];
 
-        // 데이터 페칭 함수
+        // 데이터 받는 함수
         function fetchData() {
-            fetch("http://localhost:4321/api/getData")
+            fetch("http://localhost:4321/api/kakao/get-data")
                 .then((response) => response.json())
                 .then((data) => {
                     // 배열 초기화
@@ -78,8 +95,8 @@
                             content: item.road,
                             status: item.status
                         };
-                        console.log(item.latitude)
 
+                        //  status 별 따로 정보 담기
                         if (item.status === 0) {
                             detected_markers.push(data_item);
                         } else if (item.status === 1) {
@@ -110,6 +127,7 @@
 
         // 스위치 상태에 따라 마커를 업데이트하는 함수
         function updateMarkers() {
+
             // 기존 마커 모두 제거
             marker_object_list.forEach(marker => marker.setMap(null));
             marker_object_list.length = 0; // 배열 초기화
@@ -125,14 +143,13 @@
             }
         }
 
-        // 인포윈도우를 표시하는 클로저를 만드는 함수입니다
+        //  마우스 호버 액션리스너
         function makeOverListener(map, marker, info_window) {
             return function() {
                 info_window.open(map, marker);
             };
         }
 
-        // 인포윈도우를 닫는 클로저를 만드는 함수입니다
         function makeOutListener(info_window) {
             return function() {
                 info_window.close();
@@ -156,7 +173,7 @@
                     image: img
                 });
 
-                // ★ 중요: 생성한 마커를 배열에 추가
+                //  생성한 마커를 배열에 추가
                 marker_object_list.push(marker);
 
                 var infowindow = new kakao.maps.InfoWindow({
