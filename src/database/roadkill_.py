@@ -51,13 +51,13 @@ def make_roadkill_info(
 def ensure_table_roadkill_info(engine, table="roadkill_info"):
     ddl = f"""
     CREATE TABLE IF NOT EXISTS {table} (
-        head        VARCHAR(100) NOT NULL,
-        branch      VARCHAR(100) NOT NULL,
-        line        VARCHAR(120) NOT NULL,
+        head        VARCHAR(255) NOT NULL,
+        branch      VARCHAR(255) NOT NULL,
+        line        VARCHAR(255) NOT NULL,
         direction   VARCHAR(50)  NOT NULL,
         freq        INT UNSIGNED NOT NULL,
-        lat         DOUBLE NOT NULL,
-        lon         DOUBLE NOT NULL,
+        lat         float NOT NULL,
+        lon         float NOT NULL,
         status      TINYINT NOT NULL COMMENT '0=발견,1=재발견,2=죽음',
         time        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, 
         `추정치`     VARCHAR(200) NULL,
@@ -91,10 +91,59 @@ def stream_rows(df, engine, table="roadkill_info", sleep_sec=1.0):
             conn.execute(sql, params)
         _time.sleep(sleep_sec)
 
-df = make_roadkill_info("C:\githome\hipython_rep\whynot2nd_dashboard\src\database\한국도로공사_로드킬 데이터 정보_20250501.csv", encoding="cp949")
-engine = create_engine("mysql+pymysql://root:1234@localhost/roadkill_db?charset=utf8", pool_pre_ping=True)
 
 # 테이블 생성 실행 함수
 ensure_table_roadkill_info(engine, table="roadkill_info")
         
 stream_rows(df, engine, table="roadkill_info", sleep_sec=0.5)
+
+def lat_lon_stat(df):
+    # 위도 경도 상태 -> tuple로 리턴 
+    col_tuples = ((df['lat'], df['lon'], df['status']))
+    
+# select을 했을때 위도 경도 상태 -> tuple로 리턴, 나머지 
+
+# 쿼리 뽑기 
+def day_frequency(df):
+    sql = """
+    SELECT , 
+            DATE(time) as dt,
+            SUM(freq) as total_freq
+    FROM roadkill_info
+    GROUP BY branch, DATE(time)
+    ORDER BY branch
+    """
+    
+    with engine.begin() as conn:
+        for row in conn.execute(text(sql)).mappings():
+            return(row["branch"], row[ "dt"], row["total_freq"])
+
+
+# tuple 
+def lat_lon_stat_info(df):
+    sql = """
+    SELECT head,
+            branch,
+            line, 
+            direction,
+            lat,
+            lon,
+            status,
+            time 
+    FROM roadkill_info
+    """
+    with engine.begin() as conn:
+        for row in conn.execute(text(sql)).mappings():
+            dt = row["time"] 
+            time_str = f"{dt.year}-{dt.month}-{dt.day} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}"
+
+            coord = (row["lat"], row["lon"], row["status"])
+            meta  = [row["head"], row["branch"], row["line"], row["direction"], time_str]
+
+            return(coord, meta)   
+        
+# 실행 코드
+df = make_roadkill_info("C:\githome\hipython_rep\whynot2nd_dashboard\src\database\한국도로공사_로드킬 데이터 정보_20250501.csv", encoding="cp949")
+engine = create_engine("mysql+pymysql://root:1234@localhost/roadkill_db?charset=utf8", pool_pre_ping=True)
+day_frequency(df)
+lat_lon_stat_info(df)
