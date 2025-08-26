@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KAKAOMAP</title>
+    <script type="text/javascript" src="/api/kakao/maps-sdk"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr"
+          crossorigin="anonymous">
+</head>
+<body>
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+        crossorigin="anonymous">
+</script>
+
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="switchDetected" checked>
+        <label class="form-check-label" for="switchDetected">발견</label>
+    </div>
+
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="switchDetectedAgain" checked>
+        <label class="form-check-label" for="switchDetectedAgain">재발견</label>
+    </div>
+
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" id="switchKilled" checked>
+        <label class="form-check-label" for="switchKilled">사체 발견</label>
+    </div>
+
+    <div id="map" style="width:60%;height:500px;"></div>
+
+    <script>
+        var map_container = document.getElementById('map'), // 지도를 표시할 div
+            map_option = {
+                center: new kakao.maps.LatLng(36.46201132199759, 127.8490946787158), // 지도의 중심좌표
+                level: 13    // 지도의 확대 레벨
+            };
+
+        // 지도를 표시할 div와  지도 옵션으로  지도를 생성합니다
+        var map = new kakao.maps.Map(map_container, map_option);
+
+        // 지도에 표시 될 마커 객체를 가지고 있을 배열
+        const detected_markers = [];
+        const detected_again_markers = [];
+        const killed_makers = [];
+
+        const red_image = "resource/marker_icon/red.png"
+        const yellow_image = "resource/marker_icon/yellow.png"
+        const green_image = "resource/marker_icon/green.png"
+
+        // 실제로 지도에 추가 될 마커 객체를 담을 배열
+        const marker_object_list = [];
+
+        // 데이터 페칭 함수
+        function fetchData() {
+            fetch("http://localhost:4321/api/getData")
+                .then((response) => response.json())
+                .then((data) => {
+                    // 배열 초기화
+                    detected_markers.length = 0;
+                    detected_again_markers.length = 0;
+                    killed_makers.length = 0;
+
+                    // 데이터 받아와서 배열에 넣기
+                    data.forEach(item => {
+                        const latlng = new kakao.maps.LatLng(item.latitude, item.longitude);
+                        const data_item = {
+                            latlng: latlng,
+                            content: item.road || '정보 없음'
+                        };
+
+                        if (item.state === 0) {
+                            detected_markers.push(data_item);
+                        } else if (item.state === 1) {
+                            detected_again_markers.push(data_item);
+                        } else if (item.state === 2) {
+                            killed_makers.push(data_item);
+                        }
+                    });
+
+                    // 데이터 업데이트 후 마커 업데이트
+                    updateMarkers();
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // 5초마다 데이터 업데이트
+        setInterval(fetchData, 5000);
+
+        // 스위치 확인
+        const checkbox1 = document.getElementById('switchDetected');
+        const checkbox2 = document.getElementById('switchDetectedAgain');
+        const checkbox3 = document.getElementById('switchKilled');
+
+        // 스위치에 이벤트 리스너 추가
+        checkbox1.addEventListener("change", updateMarkers);
+        checkbox2.addEventListener("change", updateMarkers);
+        checkbox3.addEventListener("change", updateMarkers);
+
+        // 스위치 상태에 따라 마커를 업데이트하는 함수
+        function updateMarkers() {
+            // 기존 마커 모두 제거
+            marker_object_list.forEach(marker => marker.setMap(null));
+            marker_object_list.length = 0; // 배열 초기화
+
+            if (checkbox1.checked) {
+                addMarkers(detected_markers);
+            }
+            if (checkbox2.checked) {
+                addMarkers(detected_again_markers);
+            }
+            if (checkbox3.checked) {
+                addMarkers(killed_makers);
+            }
+        }
+
+        // 인포윈도우를 표시하는 클로저를 만드는 함수입니다
+        function makeOverListener(map, marker, info_window) {
+            return function() {
+                info_window.open(map, marker);
+            };
+        }
+
+        // 인포윈도우를 닫는 클로저를 만드는 함수입니다
+        function makeOutListener(info_window) {
+            return function() {
+                info_window.close();
+            };
+        }
+
+        // 마커를 추가하는 함수
+        function addMarkers(positions) {
+            for (var i = 0; i < positions.length; i ++) {
+                // 마커를 생성합니다
+
+                //  status 에 따라 마커 이미지 변경
+                images = positions[i].status === 0 ? green_image : (positions[i].status === 1 ? yellow_image : red_image);
+
+                var marker = new kakao.maps.Marker({
+                    map: map, // 마커를 표시할 지도
+                    position: positions[i].latlng, // 마커의 위치
+                    image: images
+                });
+
+                // 마커에 표시할 인포윈도우를 생성합니다
+                var infowindow = new kakao.maps.InfoWindow({
+                    content: positions[i].content // 인포윈도우에 표시할 내용
+                });
+
+                kakao.maps.event.addListener(marker, 'mouseover', makeOverListener(map, marker, infowindow));
+                kakao.maps.event.addListener(marker, 'mouseout', makeOutListener(infowindow));
+            }
+        }
+
+        // 페이지 로드 시 초기 마커를 표시하기 위해 fetchData 함수 호출
+        fetchData();
+    </script>
+</body>
+</html>
