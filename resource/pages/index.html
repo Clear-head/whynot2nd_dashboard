@@ -24,36 +24,60 @@
             crossorigin="anonymous">
     </script>
 
-    <!--    Grafana panel    -->
-    <div class="container">
+    <!--    바디 메인 컨테이너   -->
+    <div class="container text-center">
+        <div class="row">
 
-        <iframe src="http://localhost:3000/d-solo/38eedacf-2392-420d-8c4f-83a81cc1c579/graph?orgId=1&from=1756185304902&to=1756188904902&timezone=browser&refresh=1m&panelId=2&__feature.dashboardSceneSolo=true" width="450" height="200" frameborder="0"></iframe>
+            <!--    카카오 맵 관련 컨테이너    -->
+            <div class="col">
+
+                <!--    카카오 맵    -->
+                <div id="map" style="width:90%;height:75vh;"></div>
+                <div id="info"></div>
+
+            </div>
+            <div class="col">
+
+                    <!--    마커 필터 스위치    -->
+                <div class="row">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="switchDetected" checked>
+                        <label class="form-check-label" for="switchDetected">발견</label>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="switchDetectedAgain" checked>
+                        <label class="form-check-label" for="switchDetectedAgain">재발견</label>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="switchKilled" checked>
+                        <label class="form-check-label" for="switchKilled">사체 발견</label>
+                    </div>
+
+                    <!--    필터링 된 마커들의 content 정보 표    -->
+                    <div>
+                        <div id="marker-items"></div>
+
+                    </div>
+                </div>
+
+
+
+            </div>
+
+            <!--    우측 컬럼(절반)   -->
+            <div class="col">
+                <!--    Grafana panel1   -->
+                <div class="container" id="grafana">
+
+                    <iframe src="http://localhost:3000/d-solo/38eedacf-2392-420d-8c4f-83a81cc1c579/graph?orgId=1&from=1756185304902&to=1756188904902&timezone=browser&refresh=1m&panelId=2&__feature.dashboardSceneSolo=true" width="450" height="200" frameborder="0"></iframe>
+
+                </div>
+            </div>
+        </div>
 
     </div>
-
-
-    <!--    마커 필터 스위치    -->
-    <div class="container">
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="switchDetected" checked>
-            <label class="form-check-label" for="switchDetected">발견</label>
-        </div>
-
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="switchDetectedAgain" checked>
-            <label class="form-check-label" for="switchDetectedAgain">재발견</label>
-        </div>
-
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="switchKilled" checked>
-            <label class="form-check-label" for="switchKilled">사체 발견</label>
-        </div>
-
-        <!--    카카오 맵    -->
-        <div id="map" style="width:60%;height:500px;"></div>
-
-    </div>
-
 
     <script>
         var map_container = document.getElementById('map'), // 지도를 표시할 div
@@ -77,6 +101,9 @@
         // 실제로 지도에 추가 될 마커 객체를 담을 배열
         const marker_object_list = [];
 
+        //  지도에 추가된 마커 객체 지도 옆에 표시용
+        const current_displayed_markers = [];
+
         // 데이터 받는 함수
         function fetchData() {
             fetch("http://localhost:4321/api/kakao/get-data")
@@ -92,7 +119,7 @@
                         const latlng = new kakao.maps.LatLng(item.latitude, item.longitude);
                         const data_item = {
                             latlng: latlng,
-                            content: item.road,
+                            content: item.contents,
                             status: item.status
                         };
 
@@ -125,12 +152,42 @@
         checkbox2.addEventListener("change", updateMarkers);
         checkbox3.addEventListener("change", updateMarkers);
 
+
+        function item_list() {
+            const container = document.getElementById('marker-items');
+
+            // 기존 내용 초기화
+            container.innerHTML = '';
+
+            // 현재 표시되는 마커들의 정보를 리스트로 표시
+            current_displayed_markers.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = `marker-item status-${item.status}`;
+
+                const statusText = item.status === 0 ? '발견' : (item.status === 1 ? '재발견' : '사체 발견');
+                div.innerHTML = `
+                    <strong>${statusText}</strong><br>
+                    ${item.content}
+                `;
+
+                container.appendChild(div);
+            });
+
+            // 총 개수 표시
+            const countDiv = document.createElement('div');
+            countDiv.className = 'alert alert-info mt-2';
+            countDiv.innerHTML = `총 ${current_displayed_markers.length}개 마커`;
+            container.appendChild(countDiv);
+        }
+
+
         // 스위치 상태에 따라 마커를 업데이트하는 함수
         function updateMarkers() {
 
             // 기존 마커 모두 제거
             marker_object_list.forEach(marker => marker.setMap(null));
             marker_object_list.length = 0; // 배열 초기화
+            current_displayed_markers.length = 0;
 
             if (checkbox1.checked) {
                 addMarkers(detected_markers);
@@ -141,6 +198,8 @@
             if (checkbox3.checked) {
                 addMarkers(killed_markers);
             }
+
+            item_list();
         }
 
         //  마우스 호버 액션리스너
@@ -158,6 +217,8 @@
 
         // 마커를 추가하는 함수
         function addMarkers(positions) {
+            console.log('addMarkers 호출됨, 추가할 마커 수:', positions.length); // 디버깅용
+
             for (var i = 0; i < positions.length; i++) {
                 var src = positions[i].status === 0 ? green_image : (positions[i].status === 1 ? yellow_image : red_image);
 
@@ -175,6 +236,7 @@
 
                 //  생성한 마커를 배열에 추가
                 marker_object_list.push(marker);
+                current_displayed_markers.push(positions[i]);
 
                 var infowindow = new kakao.maps.InfoWindow({
                     content: positions[i].content

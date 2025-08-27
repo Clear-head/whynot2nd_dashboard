@@ -1,4 +1,7 @@
-import uvicorn
+from database import stream_rows, conn_engine, lat_lon_stat_info, ensure_table_roadkill_info
+
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
@@ -9,7 +12,17 @@ import httpx
 from dotenv import load_dotenv
 import os
 
-app = FastAPI()
+conn = conn_engine()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI 시작 시 백그라운드에서 stream_rows 실행"""
+    asyncio.create_task(stream_rows(conn))
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="../resource/pages")
 
 app.add_middleware(
@@ -61,13 +74,12 @@ async def get_data(request: Request):
         각 데이터는 다음 구조를 가집니다:
         - latitude: float (위도)
         - longitude: float (경도)
-        - road: str (도로명 주소 또는 위치 정보)
+        - contents: str (도로명 주소 또는 위치 정보)
         - state: int (상태 - 0: 발견, 1: 재발견, 2: 사체 발견)
     """
     try:
 
-        data = None
-
+        data = lat_lon_stat_info(conn)
         return JSONResponse(content=data)
 
     except Exception as e:
@@ -101,4 +113,7 @@ async def proxy_kakao_maps_sdk():
 
 
 if __name__ == "__main__":
+    import uvicorn
+
+    ensure_table_roadkill_info(conn)
     uvicorn.run(app, host="127.0.0.1", port=4321)

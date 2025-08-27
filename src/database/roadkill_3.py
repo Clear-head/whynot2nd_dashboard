@@ -1,8 +1,10 @@
+import asyncio
+import os
+
 import pymysql
 from sqlalchemy import create_engine, text
 import pandas as pd 
 import numpy as np
-from datetime import datetime, timedelta
 import time as _time
 import uuid
 
@@ -13,10 +15,7 @@ def make_roadkill_info(
     csv_path: str,
     *,
     encoding: str = "cp949",
-    seed: int | None = 42,
-    start_dt: str | None = None,     
-    time_as_string: bool = True,     # 결과 time을 문자열로
-    apply_rules: bool = True         # 중복 좌표 상태 규칙 적용
+    seed: int | None = 42
 ) -> pd.DataFrame:
     # CSV 로드, 컬럼 정리
     df = pd.read_csv(csv_path, encoding=encoding)
@@ -49,6 +48,23 @@ def make_roadkill_info(
     df = df[["head","branch","line","direction","freq","lat","lon","status","추정치"]]
     return df
 
+
+def conn_engine():
+    """
+        sqlalchemy connector
+    :return:
+    """
+    engine = None
+    try:
+        engine = create_engine("mysql+pymysql://root:1234@localhost/roadkill_db?charset=utf8", pool_pre_ping=True)
+
+        if engine is None:
+            raise Exception(f"engine is None")
+
+    except Exception as e:
+        print(f"[database] connection error: {e}")
+    return engine
+
 # 테이블 생성 
 def ensure_table_roadkill_info(engine, table="roadkill_info"):
     ddl = f"""
@@ -71,15 +87,22 @@ def ensure_table_roadkill_info(engine, table="roadkill_info"):
         INDEX idx_line (line)
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
     """
-    with engine.begin() as conn:
-        conn.execute(text(ddl))
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(ddl))
+    except Exception as e:
+        print(f"[database] ensure_table_roadkill_info error: {e}")
     
 # 현재있는 id 집합
 def fetch_existing_ids(engine, table="roadkill_info"):
     sql = text(f"SELECT id FROM {table}")
-    with engine.begin() as conn:
-        rows = conn.execute(sql).fetchall()
-    # id들을 set으로 반환
+    try:
+        with engine.begin() as conn:
+            rows = conn.execute(sql).fetchall()
+        # id들을 set으로 반환
+    except Exception as e:
+        print(f"[database] fetch_existing_ids error: {e}")
+        raise e
     return {row[0] for row in rows}
 
 # UUID 생성 
@@ -91,38 +114,42 @@ def get_uuid(existing_ids: set):
 
 
 # 한 row씩 적재
-def stream_rows(df, engine, table="roadkill_info", sleep_sec=1.0):
+async def stream_rows(engine, table="roadkill_info", sleep_sec=1.0):
     # 1) 현재 DB에 있는 ID들 가져오기
+    df = make_roadkill_info("./database/한국도로공사_로드킬 데이터 정보_20250501.csv", encoding="cp949")
     existing_ids = fetch_existing_ids(engine, table)
 
     sql = text(f"""
-        INSERT INTO {table}
-        (id, head, branch, line, direction, freq, lat, lon, status, `추정치`)
-        VALUES (:id, :head, :branch, :line, :direction, :freq, :lat, :lon, :status, :추정치)
+        INSERT INTO {table} (
+            id, head, branch, line, direction, freq, lat, lon, status, `추정치`
+        ) VALUES (:id, :head, :branch, :line, :direction, :freq, :lat, :lon, :status, :추정치)
     """)
+    try:
 
-    for _, r in enumerate(df.itertuples(index=False), 1):
-        params = {
-            "id": get_uuid(existing_ids),   # 여기서 중복 없는 id 생성
-            "head": r.head,
-            "branch": r.branch,
-            "line": r.line,
-            "direction": r.direction,
-            "freq": int(r.freq),
-            "lat": float(r.lat),
-            "lon": float(r.lon),
-            "status": int(r.status),
-            "추정치": getattr(r, "추정치", None),
-        }
-        with engine.begin() as conn:
-            conn.execute(sql, params)
+        for _, r in enumerate(df.itertuples(index=False), 1):
+            params = {
+                "id": get_uuid(existing_ids),   # 여기서 중복 없는 id 생성
+                "head": r.head,
+                "branch": r.branch,
+                "line": r.line,
+                "direction": r.direction,
+                "freq": int(r.freq),
+                "lat": float(r.lat),
+                "lon": float(r.lon),
+                "status": int(r.status),
+                "추정치": getattr(r, "추정치", None),
+            }
+            with engine.begin() as conn:
+                conn.execute(sql, params)
 
-        existing_ids.add(params["id"])  # 새로 추가된 id도 캐시에 반영
-        _time.sleep(sleep_sec)
+            existing_ids.add(params["id"])  # 새로 추가된 id도 캐시에 반영
+            await asyncio.sleep(sleep_sec)
+    except Exception as e:
+        print(f"[database] stream_rows error: {e}")
 
 
 # 쿼리 뽑기 
-def day_frequency(df):
+def day_frequency():
     sql = """
     SELECT branch, 
             DATE(time) as dt,
@@ -138,7 +165,9 @@ def day_frequency(df):
 
 
 # select을 했을때 위도 경도 상태 -> tuple로 리턴, 나머지 
-def lat_lon_stat_info(df):
+def lat_lon_stat_info(engine):
+
+    data = []
     sql = """
     SELECT head,
             branch,
@@ -150,21 +179,16 @@ def lat_lon_stat_info(df):
             time 
     FROM roadkill_info
     """
-    with engine.begin() as conn:
-        for row in conn.execute(text(sql)).mappings():
-            dt = row["time"] 
-            time_str = f"{dt.year}-{dt.month}-{dt.day} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}"
+    try:
+        with engine.begin() as conn:
+            for row in conn.execute(text(sql)).mappings():
+                dt = row["time"]
+                time_str = f"{dt.year}-{dt.month}-{dt.day} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}"
 
-            coord = (row["lat"], row["lon"], row["status"])
-            meta  = [row["head"], row["branch"], row["line"], row["direction"], time_str]
+                coord = (row["lat"], row["lon"], row["status"])
+                meta  = [row["head"], row["branch"], row["line"], row["direction"], time_str]
+                data.append({"latitude": row["lat"], "longitude": row["lon"], "contents": ''.join(meta), "status": row["status"]})
 
-            return(coord, meta)   
-                                                            
-# 실행 코드
-df = make_roadkill_info("C:\githome\hipython_rep\whynot2nd_dashboard\src\database\한국도로공사_로드킬 데이터 정보_20250501.csv", encoding="cp949")
-engine = create_engine("mysql+pymysql://root:1234@localhost/roadkill_db?charset=utf8", pool_pre_ping=True)
-# 테이블 생성 실행 함수
-ensure_table_roadkill_info(engine, table="roadkill_info")
-stream_rows(df, engine, table="roadkill_info", sleep_sec=0.5)
-day_frequency(df)
-lat_lon_stat_info(df)
+        return data
+    except Exception as e:
+        print(f"[database] lat_lon_stat_info error: {e}")
