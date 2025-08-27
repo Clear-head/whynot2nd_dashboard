@@ -1,11 +1,7 @@
 import asyncio
-import os
-
-import pymysql
 from sqlalchemy import create_engine, text
 import pandas as pd 
 import numpy as np
-import time as _time
 import uuid
 
 
@@ -165,29 +161,37 @@ def day_frequency():
 
 
 # select을 했을때 위도 경도 상태 -> tuple로 리턴, 나머지 
-def lat_lon_stat_info(engine):
+from sqlalchemy import text
+import datetime
 
+
+def lat_lon_stat_info(engine):
     data = []
+
+    # 1시간 전 시간을 datetime 객체로 생성
+    time_threshold = datetime.datetime.now() - datetime.timedelta(days=1)
+
     sql = """
-    SELECT head,
-            branch,
-            line, 
-            direction,
-            lat,
-            lon,
-            status,
-            time 
-    FROM roadkill_info
-    """
+          SELECT head,
+                 branch,
+                 line,
+                 direction,
+                 lat,
+                 lon,
+                 status, time
+          FROM roadkill_info
+          WHERE time >= :time_param
+          """
     try:
         with engine.begin() as conn:
-            for row in conn.execute(text(sql)).mappings():
+            for row in conn.execute(text(sql).bindparams(time_param=time_threshold)).mappings():
                 dt = row["time"]
                 time_str = f"{dt.year}-{dt.month}-{dt.day} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}"
 
                 coord = (row["lat"], row["lon"], row["status"])
-                meta  = [row["head"], row["branch"], row["line"], row["direction"], time_str]
-                data.append({"latitude": row["lat"], "longitude": row["lon"], "contents": ''.join(meta), "status": row["status"]})
+                meta = [row["head"], row["branch"], row["line"], row["direction"], time_str]
+                data.append({"latitude": row["lat"], "longitude": row["lon"], "contents": ' '.join(meta),
+                             "status": row["status"]})
 
         return data
     except Exception as e:

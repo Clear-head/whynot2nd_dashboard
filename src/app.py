@@ -1,3 +1,5 @@
+from starlette.responses import RedirectResponse
+
 from database import stream_rows, conn_engine, lat_lon_stat_info, ensure_table_roadkill_info
 
 import asyncio
@@ -7,6 +9,8 @@ from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.staticfiles import StaticFiles
 
 import httpx
 from dotenv import load_dotenv
@@ -24,6 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="../resource/pages")
+app.mount("/pages", StaticFiles(directory="../resource/pages"), name="pages")
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,6 +45,11 @@ async def root(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request
     })
+
+
+@app.get("/fail")
+async def fail(request: Request):
+    return templates.TemplateResponse("fail.html", {"request": request})
 
 
 @app.get("/api/raspberry-pi/camera", response_class=HTMLResponse)
@@ -77,17 +87,9 @@ async def get_data(request: Request):
         - contents: str (도로명 주소 또는 위치 정보)
         - state: int (상태 - 0: 발견, 1: 재발견, 2: 사체 발견)
     """
-    try:
-
-        data = lat_lon_stat_info(conn)
-        return JSONResponse(content=data)
-
-    except Exception as e:
-        print(f"Error in get_data: {e}")
-        return JSONResponse(
-            content={"error": "데이터를 가져오는 중 오류가 발생했습니다."},
-            status_code=500
-        )
+    data = lat_lon_stat_info(conn)
+    print(*data)
+    return JSONResponse(content=data)
 
 
 @app.get("/api/kakao/maps-sdk")
@@ -95,8 +97,6 @@ async def proxy_kakao_maps_sdk():
 
     load_dotenv()
     KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")
-
-    print(KAKAO_API_KEY)
 
     try:
         async with httpx.AsyncClient() as client:
@@ -109,7 +109,20 @@ async def proxy_kakao_maps_sdk():
             )
 
     except Exception as e:
-        print(f"[API] get api key ERROR: {e}")
+        raise Exception (f"[API] get api key ERROR: {e}")
+
+
+#   예외 핸들러
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    print(f"Unhandled exception: {exc}")
+    return RedirectResponse(url="/fail")
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code >= 500:
+        return RedirectResponse(url="/fail")
+    raise exc
 
 
 if __name__ == "__main__":
