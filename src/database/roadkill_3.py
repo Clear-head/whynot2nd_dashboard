@@ -4,22 +4,11 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import time as _time
+import uuid
 
-# DB 연결 함수
-def make_engine(
-    user: str = "root",
-    password: str = "1234",
-    host: str = "localhost",
-    port: int = 3306,
-    db: str = "roadkill_db",
-    charset: str = "utf8mb4",
-):
-    url = f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}?charset={charset}"
-    return create_engine(url, pool_pre_ping=True)
 
 # 데이터 전처리 
-# csv 읽어오기 -> 컬럼이름 정리/이름 변경 -> dtype 보정 (나중에 sql가서 오류 안나게) 
-# -> (status 임시 생성) -> 추정치 빈 문자열 생성 -> mysql에 적재 가능한 DF로 변환
+# 전처리 
 def make_roadkill_info(
     csv_path: str,
     *,
@@ -49,7 +38,6 @@ def make_roadkill_info(
     df["lon"]  = pd.to_numeric(df["lon"],  errors="coerce")
 
     # status 랜덤, - 나중엔 필요없음 
-    # (0=발견,1=재발견,2=죽음)
     if seed is not None:
         np.random.seed(seed)
     df["status"] = np.random.choice([0,1,2], size=len(df)).astype("int8")
@@ -64,16 +52,18 @@ def make_roadkill_info(
 def ensure_table_roadkill_info(engine, table="roadkill_info"):
     ddl = f"""
     CREATE TABLE IF NOT EXISTS {table} (
-        head        VARCHAR(255) NOT NULL,
-        branch      VARCHAR(255) NOT NULL,
-        line        VARCHAR(255) NOT NULL,
-        direction   VARCHAR(50)  NOT NULL,
-        freq        INT UNSIGNED NOT NULL,
-        lat         float NOT NULL,$
-        lon         float NOT NULL,
-        status      TINYINT NOT NULL COMMENT '0=발견,1=재발견,2=죽음',
-        time        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+        `id`          VARCHAR(255) NOT NULL,
+        `head`        VARCHAR(255) NOT NULL,
+        `branch`      VARCHAR(255) NOT NULL,
+        `line`        VARCHAR(255) NOT NULL,
+        `direction`   VARCHAR(50)  NOT NULL,
+        `freq`        INT UNSIGNED NOT NULL,
+        `lat`         float NOT NULL,
+        `lon`         float NOT NULL,
+        `status`      TINYINT NOT NULL COMMENT '0=발견,1=재발견,2=죽음',
+        `time`        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, 
         `추정치`     VARCHAR(200) NULL,
+        PRIMARY KEY (id),                 
         INDEX idx_ts (time),
         INDEX idx_head (head),
         INDEX idx_branch (branch),
@@ -85,24 +75,51 @@ def ensure_table_roadkill_info(engine, table="roadkill_info"):
 
     return engine
 
+# 현재있는 id 집합
+def fetch_existing_ids(engine, table="roadkill_info"):
+    sql = text(f"SELECT id FROM {table}")
+    with engine.begin() as conn:
+        rows = conn.execute(sql).fetchall()
+    # id들을 set으로 반환
+    return {row[0] for row in rows}
+
+# UUID 생성 
+def get_uuid(existing_ids: set):
+    new_id = uuid.uuid4()
+    while str(new_id) in existing_ids:   # 문자열 PK라면 str로 맞춰줌
+        new_id = uuid.uuid4()
+    return str(new_id)
+
 
 # 한 row씩 적재
 def stream_rows(df, engine, table="roadkill_info", sleep_sec=1.0):
+    # 1) 현재 DB에 있는 ID들 가져오기
+    existing_ids = fetch_existing_ids(engine, table)
+
     sql = text(f"""
-        INSERT IGNORE INTO {table}
-        (head, branch, line, direction, freq, lat, lon, status, `추정치`)
-        VALUES (:head, :branch, :line, :direction, :freq, :lat, :lon, :status, :추정치)
+        INSERT INTO {table}
+        (id, head, branch, line, direction, freq, lat, lon, status, `추정치`)
+        VALUES (:id, :head, :branch, :line, :direction, :freq, :lat, :lon, :status, :추정치)
     """)
-    with engine.begin() as conn:
-        for _, r in enumerate(df.itertuples(index=False), 1):
-            params = {
-                "head": r.head, "branch": r.branch, "line": r.line, "direction": r.direction,
-                "freq": int(r.freq), "lat": float(r.lat), "lon": float(r.lon),
-                "status": int(r.status), "추정치": getattr(r, "추정치", ""),
-            }
-        conn.execute(sql, params)
-        if sleep_sec:
-            _time.sleep(sleep_sec)
+
+    for _, r in enumerate(df.itertuples(index=False), 1):
+        params = {
+            "id": get_uuid(existing_ids),   # 여기서 중복 없는 id 생성
+            "head": r.head,
+            "branch": r.branch,
+            "line": r.line,
+            "direction": r.direction,
+            "freq": int(r.freq),
+            "lat": float(r.lat),
+            "lon": float(r.lon),
+            "status": int(r.status),
+            "추정치": getattr(r, "추정치", None),
+        }
+        with engine.begin() as conn:
+            conn.execute(sql, params)
+
+        existing_ids.add(params["id"])  # 새로 추가된 id도 캐시에 반영
+        _time.sleep(sleep_sec)
 
 
 
@@ -150,20 +167,12 @@ def lat_lon_stat_info(df):
             meta  = [row["head"], row["branch"], row["line"], row["direction"], time_str]
 
             return(coord, meta)   
-        
+                                                            
 # 실행 코드
 df = make_roadkill_info("C:\githome\hipython_rep\whynot2nd_dashboard\src\database\한국도로공사_로드킬 데이터 정보_20250501.csv", encoding="cp949")
-engine = make_engine(
-    user: str = "root",
-    password: str = "1234",
-    host: str = "localhost",
-    port: int = 3306,
-    db: str = "roadkill_db",
-    charset: str = "utf8mb4")
-
+engine = create_engine("mysql+pymysql://root:1234@localhost/roadkill_db?charset=utf8", pool_pre_ping=True)
 # 테이블 생성 실행 함수
 ensure_table_roadkill_info(engine, table="roadkill_info")
-# 한 줄씩 적재       
 stream_rows(df, engine, table="roadkill_info", sleep_sec=0.5)
 day_frequency(df)
 lat_lon_stat_info(df)
