@@ -158,7 +158,7 @@ def lat_lon_stat_info(df):
             coord = (row["lat"], row["lon"], row["status"])
             meta  = [row["head"], row["branch"], row["line"], row["direction"], time_str]
 
-            print(coord, meta)   
+            return(coord, meta)   
                                                             
 # 실행 코드
 df = make_roadkill_info("C:\githome\hipython_rep\whynot2nd_dashboard\src\database\한국도로공사_로드킬 데이터 정보_20250501.csv", encoding="cp949")
