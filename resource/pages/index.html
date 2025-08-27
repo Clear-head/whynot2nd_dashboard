@@ -71,44 +71,52 @@
                     <h6 class="section-title">시간 단위 설정</h6>
 
                     <div class="time-selector">
+
                         <div class="row">
-                            <div class="selector-group">
-                                <label>시간 단위</label>
-                                <div class="dropdown">
-                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="timeUnitBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                        년
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('year', '년')">년</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('month', '월')">월</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('day', '일')">일</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('quarter', '분기')">분기</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('half', '반기')">반기</a></li>
-                                    </ul>
+
+                            <div class="col">
+                                <div class="selector-group">
+                                    <label>시간 단위</label>
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle" type="button" id="timeUnitBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                            년
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('year', '년')">년</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('month', '월')">월</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('day', '일')">일</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('quarter', '분기')">분기</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('half', '반기')">반기</a></li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="selector-group">
-                                <label>년도</label>
-                                <div class="dropdown">
-                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="yearBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                        2024년
-                                    </button>
-                                    <ul class="dropdown-menu" id="yearDropdown">
-                                        <!-- JavaScript로 동적 생성 -->
-                                    </ul>
+                            <div class="col">
+                                <div class="selector-group">
+                                    <label>년도</label>
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle" type="button" id="yearBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                            2024년
+                                        </button>
+                                        <ul class="dropdown-menu" id="yearDropdown">
+                                            <!-- JavaScript로 동적 생성 -->
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="selector-group">
-                                <label id="periodLabel">기간</label>
-                                <div class="dropdown">
-                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="periodBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                                        해당 없음
-                                    </button>
-                                    <ul class="dropdown-menu" id="periodDropdown">
-                                        <!-- JavaScript로 동적 생성 -->
-                                    </ul>
+                            <div class="col">
+                                <div class="selector-group">
+                                    <label id="periodLabel">기간</label>
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle" type="button" id="periodBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                                            해당 없음
+                                        </button>
+                                        <ul class="dropdown-menu" id="periodDropdown">
+                                            <!-- JavaScript로 동적 생성 -->
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -116,7 +124,7 @@
                 </div>
 
                 <!-- Grafana Panel 1 -->
-                <div class="grafana-panel">
+                <div class="grafana-panel" id="panel_1">
                     <iframe src="http://localhost:3000/d-solo/38eedacf-2392-420d-8c4f-83a81cc1c579/graph?orgId=1&from=1756185304902&to=1756188904902&timezone=browser&refresh=1m&panelId=2&__feature.dashboardSceneSolo=true"
                             height="300"></iframe>
                 </div>
@@ -126,22 +134,11 @@
                     <iframe src="http://localhost:3000/d-solo/38eedacf-2392-420d-8c4f-83a81cc1c579/graph?orgId=1&from=1756185304902&to=1756188904902&timezone=browser&refresh=1m&panelId=3&__feature.dashboardSceneSolo=true"
                             height="300"></iframe>
                 </div>
-
-                <!-- Grafana Panel 3 -->
-                <div class="grafana-panel">
-                    <iframe src="http://localhost:3000/d-solo/38eedacf-2392-420d-8c4f-83a81cc1c579/graph?orgId=1&from=1756185304902&to=1756188904902&timezone=browser&refresh=1m&panelId=4&__feature.dashboardSceneSolo=true"
-                            height="250"></iframe>
-                </div>
-
-                <!-- Grafana Panel 4 -->
-                <div class="grafana-panel">
-                    <iframe src="http://localhost:3000/d-solo/38eedacf-2392-420d-8c4f-83a81cc1c579/graph?orgId=1&from=1756185304902&to=1756188904902&timezone=browser&refresh=1m&panelId=5&__feature.dashboardSceneSolo=true"
-                            height="250"></iframe>
-                </div>
             </div>
         </div>
     </div>
 
     <script type="text/javascript" src="/pages/left_side.js"></script>
+    <script type="text/javascript" src="/pages/right_side.js"></script>
 </body>
 </html>
