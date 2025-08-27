@@ -22,7 +22,8 @@ def make_roadkill_info(
     df = pd.read_csv(csv_path, encoding=encoding)
     df.columns = df.columns.str.replace("\ufeff","",regex=True).str.strip()
 
-    # 컬럼 이름 변경 
+    # 컬럼 이름 변경
+    # 본부명: head, 지사명:branch
     col_map = {
         "본부명":"head", "지사명":"branch", "노선명":"line",
         "방 향":"direction", "방향":"direction",
@@ -72,9 +73,7 @@ def ensure_table_roadkill_info(engine, table="roadkill_info"):
     """
     with engine.begin() as conn:
         conn.execute(text(ddl))
-
-    return engine
-
+    
 # 현재있는 id 집합
 def fetch_existing_ids(engine, table="roadkill_info"):
     sql = text(f"SELECT id FROM {table}")
@@ -122,17 +121,10 @@ def stream_rows(df, engine, table="roadkill_info", sleep_sec=1.0):
         _time.sleep(sleep_sec)
 
 
-
-def lat_lon_stat(df):
-    # 위도 경도 상태 -> tuple로 리턴 
-    col_tuples = ((df['lat'], df['lon'], df['status']))
-    
-# select을 했을때 위도 경도 상태 -> tuple로 리턴, 나머지 
-
 # 쿼리 뽑기 
 def day_frequency(df):
     sql = """
-    SELECT , 
+    SELECT branch, 
             DATE(time) as dt,
             SUM(freq) as total_freq
     FROM roadkill_info
@@ -145,7 +137,7 @@ def day_frequency(df):
             return(row["branch"], row[ "dt"], row["total_freq"])
 
 
-# tuple 
+# select을 했을때 위도 경도 상태 -> tuple로 리턴, 나머지 
 def lat_lon_stat_info(df):
     sql = """
     SELECT head,
@@ -166,7 +158,7 @@ def lat_lon_stat_info(df):
             coord = (row["lat"], row["lon"], row["status"])
             meta  = [row["head"], row["branch"], row["line"], row["direction"], time_str]
 
-            return(coord, meta)   
+            print(coord, meta)   
                                                             
 # 실행 코드
 df = make_roadkill_info("C:\githome\hipython_rep\whynot2nd_dashboard\src\database\한국도로공사_로드킬 데이터 정보_20250501.csv", encoding="cp949")
