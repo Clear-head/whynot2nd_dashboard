@@ -70,73 +70,51 @@
                 <div class="control-panel">
                     <h6 class="section-title">시간 단위 설정</h6>
 
-                    <div class="time-selector">
+                    <!--    variables select    -->
+                    <div class="row">
+                        <form class="time-selector">
+                            <label for="add_interval">add_interval</label>
+                            <select id="add_interval">
+                                <option value="일">일</option>
+                                <option value="월">월</option>
+                                <option value="년">년</option>
+                                <option value="분기">분기</option>
+                                <option value="반기">반기</option>
+                            </select>
 
-                        <div class="row">
+                            <label for="year_sel">year_sel</label>
+                            <select id="year_sel">
+                                <option value="2025">2025</option>
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2021">2021</option>
+                            </select>
 
-                            <div class="col">
-                                <div class="selector-group">
-                                    <label>시간 단위</label>
-                                    <div class="dropdown">
-                                        <button class="btn btn-secondary dropdown-toggle" type="button" id="timeUnitBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                            년
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('year', '년')">년</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('month', '월')">월</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('day', '일')">일</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('quarter', '분기')">분기</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="selectTimeUnit('half', '반기')">반기</a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col">
-                                <div class="selector-group">
-                                    <label>년도</label>
-                                    <div class="dropdown">
-                                        <button class="btn btn-secondary dropdown-toggle" type="button" id="yearBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                            2024년
-                                        </button>
-                                        <ul class="dropdown-menu" id="yearDropdown">
-                                            <!-- JavaScript로 동적 생성 -->
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col">
-                                <div class="selector-group">
-                                    <label id="periodLabel">기간</label>
-                                    <div class="dropdown">
-                                        <button class="btn btn-secondary dropdown-toggle" type="button" id="periodBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                                            해당 없음
-                                        </button>
-                                        <ul class="dropdown-menu" id="periodDropdown">
-                                            <!-- JavaScript로 동적 생성 -->
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            <label for="sel_period">sel_period</label>
+                            <select id="sel_period">
+                                <option value="">anything</option>
+                            </select>
+                        </form>
                     </div>
                 </div>
 
                 <!-- Grafana Panel 1 -->
-                <div class="grafana-panel" id="panel_1">
-                    <iframe src="http://localhost:3000/d-solo/38eedacf-2392-420d-8c4f-83a81cc1c579/graph?orgId=1&from=1756185304902&to=1756188904902&timezone=browser&refresh=1m&panelId=2&__feature.dashboardSceneSolo=true"
+                <div class="grafana-panel" id="1">
+                    <iframe src=""
                             height="300"></iframe>
                 </div>
 
                 <!-- Grafana Panel 2 -->
-                <div class="grafana-panel">
-                    <iframe src="http://localhost:3000/d-solo/38eedacf-2392-420d-8c4f-83a81cc1c579/graph?orgId=1&from=1756185304902&to=1756188904902&timezone=browser&refresh=1m&panelId=3&__feature.dashboardSceneSolo=true"
+                <div class="grafana-panel" id="2">
+                    <iframe src=""
                             height="300"></iframe>
                 </div>
-            </div>
-        </div>
-    </div>
+
+            </div><!--right_panel-->
+
+        </div><!--row1-->
+
+    </div><!--main container-->
 
     <script type="text/javascript" src="/pages/left_side.js"></script>
     <script type="text/javascript" src="/pages/right_side.js"></script>

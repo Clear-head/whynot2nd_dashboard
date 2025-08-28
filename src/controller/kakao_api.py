@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
+from fastapi.responses import JSONResponse
 import httpx
 from dotenv import load_dotenv
 import os
-from fastapi.responses import JSONResponse
 
 from src.database.roadkill_3 import conn_engine, lat_lon_stat_info
 
@@ -25,7 +25,6 @@ async def get_data(request: Request):
     """
     conn = conn_engine()
     data = lat_lon_stat_info(conn)
-    print(*data)
     return JSONResponse(content=data)
 
 
@@ -46,4 +45,4 @@ async def proxy_kakao_maps_sdk():
             )
 
     except Exception as e:
-        raise Exception (f"[API] get api key ERROR: {e}")
+        raise Exception (f"[KAKAO API] get api key ERROR: {e}")

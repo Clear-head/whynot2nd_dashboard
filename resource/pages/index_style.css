@@ -79,6 +79,14 @@ body {
 .form-check {
     margin-bottom: 10px;
 }
+.time-selector{
+    display: flex;
+    gap: 10px;
+}
+.select option{
+    background-color: #181B1F;
+    color: #C7C3D6;
+}
 
 
 

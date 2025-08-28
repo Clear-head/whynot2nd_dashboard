@@ -18,12 +18,14 @@ const green_image = "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
 
 // 실제로 지도에 추가 될 마커 객체를 담을 배열
 const marker_object_list = [];
+//  마커 주변 영역
+const circle_object_list = [];
 
 //  지도에 추가된 마커 객체 지도 옆에 표시용
 const current_displayed_markers = [];
 
 // 데이터 받는 함수
-function fetchData() {
+function fetch_data() {
     fetch("http://localhost:4321/api/kakao/get-data")
         .then((response) => response.json())
         .then((data) => {
@@ -52,13 +54,13 @@ function fetchData() {
             });
 
             // 데이터 업데이트 후 마커 업데이트
-            updateMarkers();
+            update_markers();
         })
         .catch(error => console.error('Error fetching data:', error));
 }
 
 // 5초마다 데이터 업데이트
-setInterval(fetchData, 5000);
+setInterval(fetch_data, 5000);
 
 // 스위치 확인
 const checkbox1 = document.getElementById('switchDetected');
@@ -66,9 +68,9 @@ const checkbox2 = document.getElementById('switchDetectedAgain');
 const checkbox3 = document.getElementById('switchKilled');
 
 // 스위치에 이벤트 리스너 추가
-checkbox1.addEventListener("change", updateMarkers);
-checkbox2.addEventListener("change", updateMarkers);
-checkbox3.addEventListener("change", updateMarkers);
+checkbox1.addEventListener("change", update_markers);
+checkbox2.addEventListener("change", update_markers);
+checkbox3.addEventListener("change", update_markers);
 
 function item_list() {
     const container = document.getElementById('marker-items');
@@ -98,49 +100,50 @@ function item_list() {
 }
 
 // 스위치 상태에 따라 마커를 업데이트하는 함수
-function updateMarkers() {
+function update_markers() {
     // 기존 마커 모두 제거
     marker_object_list.forEach(marker => marker.setMap(null));
     marker_object_list.length = 0; // 배열 초기화
+    circle_object_list.forEach(marker => marker.setMap(null));
+    circle_object_list.length = 0;
     current_displayed_markers.length = 0;
 
     if (checkbox1.checked) {
-        addMarkers(detected_markers);
+        add_markers(detected_markers);
     }
     if (checkbox2.checked) {
-        addMarkers(detected_again_markers);
+        add_markers(detected_again_markers);
     }
     if (checkbox3.checked) {
-        addMarkers(killed_markers);
+        add_markers(killed_markers);
     }
 
     item_list();
 }
 
 //  마우스 호버 액션리스너
-function makeOverListener(map, marker, info_window) {
+function make_over_listener(map, marker, info_window) {
     return function() {
         info_window.open(map, marker);
     };
 }
 
-function makeOutListener(info_window) {
+function make_out_listener(info_window) {
     return function() {
         info_window.close();
     };
 }
 
-// 마커를 추가하는 함수
-function addMarkers(positions) {
-    console.log('addMarkers 호출됨, 추가할 마커 수:', positions.length); // 디버깅용
+// 마커를 추가하는 함수, 마커 주변에 원도 그리기
+function add_markers(positions) {
+    console.log('add_markers 호출됨, 추가할 마커 수:', positions.length); // 디버깅용
 
     for (var i = 0; i < positions.length; i++) {
         var src = positions[i].status === 0 ? green_image : (positions[i].status === 1 ? yellow_image : red_image);
-
         var img = new kakao.maps.MarkerImage(
             src,
             new kakao.maps.Size(32, 34),
-            {offset: new kakao.maps.Point(27, 69)}
+            {offset: new kakao.maps.Point(16, 17)}
         );
 
         var marker = new kakao.maps.Marker({
@@ -149,18 +152,33 @@ function addMarkers(positions) {
             image: img
         });
 
+        // 지도에 표시할 원을 생성합니다
+        var circle = new kakao.maps.Circle({
+            center : positions[i].latlng,
+            radius: 5000,
+            strokeWeight: 1,
+            strokeColor: positions[i].status === 0 ? "#39DE2A" : (positions[i].status === 1 ? "#FEAB38" : "#FF3DE5"),
+            strokeOpacity: 1,
+            strokeStyle: 'longdash',
+            fillColor: positions[i].status === 0 ? "#A2FF99" : (positions[i].status === 1 ? "#faae59" : "#FF8AEF"),
+            fillOpacity: 0.3
+        });
+        circle.setMap(map);
+
         //  생성한 마커를 배열에 추가
         marker_object_list.push(marker);
         current_displayed_markers.push(positions[i]);
+        circle_object_list.push(circle)
+
 
         var infowindow = new kakao.maps.InfoWindow({
             content: positions[i].content
         });
 
-        kakao.maps.event.addListener(marker, 'mouseover', makeOverListener(map, marker, infowindow));
-        kakao.maps.event.addListener(marker, 'mouseout', makeOutListener(infowindow));
+        kakao.maps.event.addListener(marker, 'mouseover', make_over_listener(map, marker, infowindow));
+        kakao.maps.event.addListener(marker, 'mouseout', make_out_listener(infowindow));
     }
 }
 
-// 페이지 로드 시 초기 마커를 표시하기 위해 fetchData 함수 호출
-fetchData();
+// 페이지 로드 시 초기 마커를 표시하기 위해 fetch_data 함수 호출
+fetch_data();
