@@ -11,7 +11,7 @@ from src.database.roadkill_3 import conn_engine, lat_lon_stat_info
 router = APIRouter()
 
 @router.get("/api/kakao/get-data")
-async def get_data(request: Request):
+async def get_data():
     """
     지도에 표시할 마커 데이터를 반환하는 API
 
