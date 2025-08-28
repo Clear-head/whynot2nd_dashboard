@@ -79,14 +79,15 @@ body {
 .form-check {
     margin-bottom: 10px;
 }
-.time-selector{
-    display: flex;
-    gap: 10px;
-}
-.select option{
+
+.control-panel{
     background-color: #181B1F;
     color: #C7C3D6;
+    border-radius: 8px;
 }
-
-
-
+#agg_interval, #year_sel, #sel_period{
+    background-color: #5d6370;
+    padding: 5px 30px 5px 10px;
+    border-radius: 4px;
+    outline: 0 none;
+}

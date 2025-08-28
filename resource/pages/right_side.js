@@ -1,6 +1,10 @@
+console.log('right_side.js 로드됨');
+
 //  get grafana panel
 async function fetch_panel_data(panelId, apiUrl, content) {
     try {
+        console.log(`Panel ${panelId} 요청:`, content);
+
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -15,78 +19,149 @@ async function fetch_panel_data(panelId, apiUrl, content) {
 
         const data = await response.json();
         const panelUrl = data.url;
-        const panelFrame = document.getElementById(panelId);
-        panelFrame.src = panelUrl
 
+        const panelDiv = document.getElementById(panelId.toString());
+        const iframe = panelDiv.querySelector('iframe');
+        if (iframe) {
+            iframe.src = panelUrl;
+            console.log(`Panel ${panelId} 업데이트 완료: ${panelUrl}`);
+        } else {
+            console.error(`Panel ${panelId}에서 iframe을 찾을 수 없습니다.`);
+        }
 
     } catch (error) {
         console.error(`API 호출 중 오류 발생 (${panelId}):`, error);
     }
 }
 
-//  content: {"url":"https://"}
+// 패널들을 업데이트하는 함수
 function get_panels() {
-    const add_interval = document.getElementById('add_interval');
+    console.log('get_panels() 함수 호출됨');
+
+    const agg_interval = document.getElementById('agg_interval');
     const year_sel = document.getElementById('year_sel');
     const sel_period = document.getElementById('sel_period');
 
+    console.log('요소 찾기 결과:', {
+        agg_interval: agg_interval,
+        year_sel: year_sel,
+        sel_period: sel_period
+    });
+
+    if (!agg_interval || !year_sel || !sel_period) {
+        console.error('셀렉터 요소를 찾을 수 없습니다.');
+        return;
+    }
+
+    // sel_period가 비활성화되어 있으면 빈 값으로 처리
+    const sel_period_value = sel_period.disabled ? "" : sel_period.value;
+
+    console.log('현재 설정값:', {
+        agg_interval: agg_interval.value,
+        year_sel: year_sel.value,
+        sel_period: sel_period_value,
+        sel_period_disabled: sel_period.disabled
+    });
+
+    // Panel 1 업데이트
     fetch_panel_data(1, "/api/dashboard/panel", {
         panel_id: 1,
-        add_interval:add_interval.value,
-        year_sel:year_sel.value,
-        sel_period:sel_period.value
+        agg_interval: agg_interval.value,
+        year_sel: year_sel.value,
+        sel_period: sel_period_value
     });
+
+    // Panel 2 업데이트
     fetch_panel_data(2, "/api/dashboard/panel", {
         panel_id: 2,
-        add_interval:add_interval.value,
-        year_sel:year_sel.value,
-        sel_period:sel_period.value
+        agg_interval: agg_interval.value,
+        year_sel: year_sel.value,
+        sel_period: sel_period_value
     });
 }
 
-get_panels();
-
-
-//  selector
+// DOM 로드 완료 후 실행
 document.addEventListener('DOMContentLoaded', function() {
-    const add_interval = document.getElementById('add_interval');
-    const sel_period = document.getElementById('sel_period');
+    console.log('DOMContentLoaded 이벤트 발생');
 
-    function update_select3() {
-        const value = add_interval.value;
-        sel_period.innerHTML = ''; // 기존 옵션 제거
-        sel_period.disabled = false; // 기본적으로 활성화
+    // 잠시 기다린 후 요소들 확인
+    setTimeout(() => {
+        console.log('setTimeout 실행, 요소들 확인 중...');
 
-        let options = [];
+        const agg_interval = document.getElementById('agg_interval');
+        const sel_period = document.getElementById('sel_period');
+        const year_sel = document.getElementById('year_sel');
 
-        switch (value) {
-            case '월':
-                for (let i = 1; i <= 12; i++) {
-                    options.push(`<option value="${i}">${i}</option>`);
-                }
-                break;
-            case '분기':
-                options.push('<option value="1">1</option>', '<option value="2">2</option>', '<option value="3">3</option>', '<option value="4">4</option>');
-                break;
-            case '반기':
-                options.push('<option value="1">1</option>', '<option value="2">2</option>');
-                break;
-            case '일':
-            case '년':
-            default:
-                sel_period.disabled = true; // '일' 또는 '년'일 때 비활성화
-                options.push('<option value="">선택불가</option>');
-                break;
+        console.log('요소 확인 결과:', {
+            agg_interval: agg_interval,
+            sel_period: sel_period,
+            year_sel: year_sel
+        });
+
+        if (!agg_interval || !sel_period || !year_sel) {
+            console.error('필수 셀렉터 요소들을 찾을 수 없습니다.');
+            console.log('전체 DOM:', document.body.innerHTML);
+            return;
         }
 
-        sel_period.innerHTML = options.join('');
-    }
+        // sel_period 옵션만 업데이트하는 함수
+        function update_select3() {
+            const value = agg_interval.value;
+            sel_period.innerHTML = '';
+            sel_period.disabled = false;
 
-    // add_interval 값이 변경될 때마다 update_select3 함수 실행
-    add_interval.addEventListener('change', update_select3);
+            let options = [];
 
-    // 페이지 로드 시 초기 상태 설정
-    update_select3();
+            switch (value) {
+                case '월':
+                    for (let i = 1; i <= 12; i++) {
+                        options.push(`<option value="${i}">${i}월</option>`);
+                    }
+                    break;
+                case '분기':
+                    options.push('<option value="Q1">1분기</option>');
+                    options.push('<option value="Q2">2분기</option>');
+                    options.push('<option value="Q3">3분기</option>');
+                    options.push('<option value="Q4">4분기</option>');
+                    break;
+                case '반기':
+                    options.push('<option value="H1">상반기</option>');
+                    options.push('<option value="H2">하반기</option>');
+                    break;
+                case '일':
+                case '년':
+                default:
+                    sel_period.disabled = true;
+                    options.push('<option value="">선택불가</option>');
+                    break;
+            }
+
+            sel_period.innerHTML = options.join('');
+            console.log(`sel_period 옵션 업데이트 완료: ${options.length}개`);
+        }
+
+        // 이벤트 리스너 추가
+        console.log('이벤트 리스너 추가 중...');
+
+        // agg_interval 변경 시: 옵션 업데이트 + 패널 새로고침
+        agg_interval.addEventListener('change', function() {
+            update_select3(); // 먼저 옵션 업데이트
+            get_panels();     // 그 다음 패널 새로고침
+        });
+
+        // year_sel 변경 시: 패널만 새로고침
+        year_sel.addEventListener('change', function() {
+            get_panels();
+        });
+
+        // sel_period 변경 시: 패널만 새로고침
+        sel_period.addEventListener('change', function() {
+            get_panels();
+        });
+
+
+        update_select3();
+        get_panels();
+
+    }, 100); // 100ms 대기
 });
-
-
