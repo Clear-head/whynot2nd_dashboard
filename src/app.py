@@ -64,7 +64,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    if exc.status_code >= 500:
+    if exc.status_code >= 499:
         return RedirectResponse(url="/fail")
     raise exc
 

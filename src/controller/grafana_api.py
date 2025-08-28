@@ -22,7 +22,6 @@ async def return_panel(content: GrafanaContent):
     if not GRAFANA_BASE_URL:
         raise HTTPException(status_code=500, detail="GRAFANA_BASE_URL not configured")
 
-    print(f"Panel request: {content}")
 
     # URL 인코딩된 값들
     agg_interval_dic = {
