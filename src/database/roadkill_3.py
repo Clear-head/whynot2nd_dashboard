@@ -144,21 +144,6 @@ async def stream_rows(engine, table="roadkill_info", sleep_sec=1.0):
         print(f"[database] stream_rows error: {e}")
 
 
-# 쿼리 뽑기 
-# def day_frequency():
-#     sql = """
-#     SELECT branch,
-#             DATE(time) as dt,
-#             SUM(freq) as total_freq
-#     FROM roadkill_info
-#     GROUP BY branch, DATE(time)
-#     ORDER BY branch
-#     """
-#
-#     with engine.begin() as conn:
-#         for row in conn.execute(text(sql)).mappings():
-#             return(row["branch"], row[ "dt"], row["total_freq"])
-
 
 # select을 했을때 위도 경도 상태 -> tuple로 리턴, 나머지 
 from sqlalchemy import text
