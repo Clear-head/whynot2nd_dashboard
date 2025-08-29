@@ -26,7 +26,6 @@ templates = Jinja2Templates(directory="../resource/pages")
 app.mount("/pages", StaticFiles(directory="../resource/pages"), name="pages")
 app.include_router(kakao_api.router)
 app.include_router(grafana_api.router)
-app.include_router(raspberry_pi_api.router)
 
 app.add_middleware(
     CORSMiddleware,
