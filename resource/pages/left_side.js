@@ -136,7 +136,6 @@ function make_out_listener(info_window) {
 
 // 마커를 추가하는 함수, 마커 주변에 원도 그리기
 function add_markers(positions) {
-    console.log('add_markers 호출됨, 추가할 마커 수:', positions.length); // 디버깅용
 
     for (var i = 0; i < positions.length; i++) {
         var src = positions[i].status === 0 ? green_image : (positions[i].status === 1 ? yellow_image : red_image);

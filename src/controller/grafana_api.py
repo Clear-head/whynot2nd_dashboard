@@ -32,12 +32,11 @@ async def return_panel(content: GrafanaContent):
         "반기": "%EB%B0%98%EA%B8%B0"
     }
 
-    # 패널 URL 생성
+
     if not content.sel_period or content.sel_period == "":
         panel_url = f"{GRAFANA_BASE_URL}&panelId={content.panel_id}&var-agg_interval={agg_interval_dic.get(content.agg_interval, '%EC%9D%BC')}&var-year_sel={content.year_sel}&__feature.dashboardSceneSolo=true"
     else:
         sel_period_value = f"{content.year_sel}-{content.sel_period.zfill(2)}"  # 01, 02 형태로 패딩
         panel_url = f"{GRAFANA_BASE_URL}&panelId={content.panel_id}&var-agg_interval={agg_interval_dic.get(content.agg_interval, '%EC%9D%BC')}&var-year_sel={content.year_sel}&var-sel_period={sel_period_value}&__feature.dashboardSceneSolo=true"
 
-    # JSON 형태로 URL 반환
     return {"url": panel_url}

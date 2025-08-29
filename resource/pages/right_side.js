@@ -39,19 +39,11 @@ function get_panels() {
 
 
     if (!agg_interval || !year_sel || !sel_period) {
-        console.error('셀렉터 요소를 찾을 수 없습니다.');
         return;
     }
 
     // sel_period가 비활성화되어 있으면 빈 값으로 처리
     const sel_period_value = sel_period.disabled ? "" : sel_period.value;
-
-    console.log('현재 설정값:', {
-        agg_interval: agg_interval.value,
-        year_sel: year_sel.value,
-        sel_period: sel_period_value,
-        sel_period_disabled: sel_period.disabled
-    });
 
     // Panel 1 업데이트
     fetch_panel_data(1, "/api/dashboard/panel", {
@@ -81,8 +73,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const year_sel = document.getElementById('year_sel');
 
         if (!agg_interval || !sel_period || !year_sel) {
-            console.error('필수 셀렉터 요소들을 찾을 수 없습니다.');
-            console.log('전체 DOM:', document.body.innerHTML);
             return;
         }
 
@@ -119,7 +109,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             sel_period.innerHTML = options.join('');
-            console.log(`sel_period 옵션 업데이트 완료: ${options.length}개`);
         }
 
         //  변경 시 옵션 업데이트 + 패널 새로고침
