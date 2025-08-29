@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import Response
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse, Response
 import httpx
 from dotenv import load_dotenv
 import os

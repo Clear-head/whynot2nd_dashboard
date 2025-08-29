@@ -21,7 +21,6 @@ conn = conn_engine()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI 시작 시 백그라운드에서 stream_rows 실행"""
     asyncio.create_task(stream_rows(conn))
     yield
 
@@ -35,7 +34,12 @@ app.include_router(raspberry_pi_api.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 개발 시에만 사용
+    allow_origins=[
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:4321",
+        "http://localhost:3000",
+        "http://localhost:4321"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,22 +55,9 @@ async def root(request: Request):
 
 
 @app.get("/fail")
+@app.get("/fail")
 async def fail(request: Request):
     return templates.TemplateResponse("fail.html", {"request": request})
-
-
-
-#   예외 핸들러
-@app.exception_handler(Exception)
-async def general_exception_handler(exc: Exception):
-    print(f"Unhandled exception: {exc}")
-    return RedirectResponse(url="/fail")
-
-@app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(exc: StarletteHTTPException):
-    if exc.status_code >= 499:
-        return RedirectResponse(url="/fail")
-    raise exc
 
 
 if __name__ == "__main__":

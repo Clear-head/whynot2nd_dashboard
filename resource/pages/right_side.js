@@ -1,9 +1,6 @@
-console.log('right_side.js 로드됨');
-
 //  get grafana panel
 async function fetch_panel_data(panelId, apiUrl, content) {
     try {
-        console.log(`Panel ${panelId} 요청:`, content);
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -24,7 +21,6 @@ async function fetch_panel_data(panelId, apiUrl, content) {
         const iframe = panelDiv.querySelector('iframe');
         if (iframe) {
             iframe.src = panelUrl;
-            console.log(`Panel ${panelId} 업데이트 완료: ${panelUrl}`);
         } else {
             console.error(`Panel ${panelId}에서 iframe을 찾을 수 없습니다.`);
         }
@@ -36,17 +32,11 @@ async function fetch_panel_data(panelId, apiUrl, content) {
 
 // 패널들을 업데이트하는 함수
 function get_panels() {
-    console.log('get_panels() 함수 호출됨');
 
     const agg_interval = document.getElementById('agg_interval');
     const year_sel = document.getElementById('year_sel');
     const sel_period = document.getElementById('sel_period');
 
-    console.log('요소 찾기 결과:', {
-        agg_interval: agg_interval,
-        year_sel: year_sel,
-        sel_period: sel_period
-    });
 
     if (!agg_interval || !year_sel || !sel_period) {
         console.error('셀렉터 요소를 찾을 수 없습니다.');
@@ -82,21 +72,13 @@ function get_panels() {
 
 // DOM 로드 완료 후 실행
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded 이벤트 발생');
 
     // 잠시 기다린 후 요소들 확인
     setTimeout(() => {
-        console.log('setTimeout 실행, 요소들 확인 중...');
 
         const agg_interval = document.getElementById('agg_interval');
         const sel_period = document.getElementById('sel_period');
         const year_sel = document.getElementById('year_sel');
-
-        console.log('요소 확인 결과:', {
-            agg_interval: agg_interval,
-            sel_period: sel_period,
-            year_sel: year_sel
-        });
 
         if (!agg_interval || !sel_period || !year_sel) {
             console.error('필수 셀렉터 요소들을 찾을 수 없습니다.');
@@ -140,21 +122,16 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log(`sel_period 옵션 업데이트 완료: ${options.length}개`);
         }
 
-        // 이벤트 리스너 추가
-        console.log('이벤트 리스너 추가 중...');
-
-        // agg_interval 변경 시: 옵션 업데이트 + 패널 새로고침
+        //  변경 시 옵션 업데이트 + 패널 새로고침
         agg_interval.addEventListener('change', function() {
             update_select3(); // 먼저 옵션 업데이트
             get_panels();     // 그 다음 패널 새로고침
         });
 
-        // year_sel 변경 시: 패널만 새로고침
         year_sel.addEventListener('change', function() {
             get_panels();
         });
 
-        // sel_period 변경 시: 패널만 새로고침
         sel_period.addEventListener('change', function() {
             get_panels();
         });
