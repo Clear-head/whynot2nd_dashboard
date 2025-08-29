@@ -1,8 +1,5 @@
-from starlette.responses import RedirectResponse
-
 from database import stream_rows, conn_engine, ensure_table_roadkill_info
 import controller.kakao_api as kakao_api
-import controller.raspberry_pi_api as raspberry_pi_api
 import controller.grafana_api as grafana_api
 
 import asyncio
@@ -11,7 +8,6 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
 
 
@@ -54,7 +50,6 @@ async def root(request: Request):
     })
 
 
-@app.get("/fail")
 @app.get("/fail")
 async def fail(request: Request):
     return templates.TemplateResponse("fail.html", {"request": request})
